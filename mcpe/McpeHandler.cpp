@@ -163,8 +163,27 @@ void McpeHandler::loadLevelDB(std::string name) {
         delete db;
         db=0;
     }
-    options.compressors[0] = new leveldb::ZlibCompressor();
+    
+    //create a bloom filter to quickly tell if a key is in the database or not
+    options.filter_policy = leveldb::NewBloomFilterPolicy(10);
+
+    //create a 40 mb cache (we use this on ~1gb devices)
+    options.block_cache = leveldb::NewLRUCache(40 * 1024 * 1024);
+
+    //create a 4mb write buffer, to improve compression and touch the disk less
+    options.write_buffer_size = 4 * 1024 * 1024;
+
+    //disable internal logging. The default logger will still print out things to a file
+    //options.info_log = new NullLogger();
+
+    //use the new raw-zip compressor to write (and read)
+    options.compressors[0] = new leveldb::ZlibCompressorRaw(-1);
+    
+    //also setup the old, slower compressor for backwards compatibility. This will only be used to read old compressed blocks.
+    options.compressors[1] = new leveldb::ZlibCompressor();
+
     options.create_if_missing = false;
+
     leveldb::Status status = leveldb::DB::Open(options, filename, &db);
     
     MCPELOG("Status = " << status.ToString().c_str() );
@@ -318,10 +337,13 @@ void McpeHandler::getTopo(const char* block, Color* map)
 
 void McpeHandler::findSizes() {
     
-    MCPELOG("Find Map Dimentions" );
+    MCPELOG("Find Map Dimentions!" );
+
 
     leveldb::Status status;
     leveldb::ReadOptions ropts;
+    ropts.verify_checksums = true;
+    ropts.fill_cache = false;
     leveldb::Iterator *it =  db->NewIterator(ropts);
     
     it->SeekToFirst();
@@ -338,6 +360,7 @@ void McpeHandler::findSizes() {
         
         status = it->status();
         //MCPELOG("Status = " << status.ToString().c_str() );
+        assert(status.ok());
         
         McpeBlock block(it->key(), it->value());
 
@@ -468,6 +491,7 @@ void McpeHandler::loadMap(MapType maptype) {
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         
         status = it->status();
+        assert(status.ok());
         
         leveldb::Slice slice = it->key();
 

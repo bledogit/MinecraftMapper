@@ -17,6 +17,12 @@
 
 #include "leveldb/db.h"
 #include "leveldb/zlib_compressor.h"
+#include "leveldb/zstd_compressor.h"
+#include "leveldb/zopfli_compressor.h"
+#include "leveldb/snappy_compressor.h"
+#include "leveldb/filter_policy.h"
+#include "leveldb/env.h"
+#include "leveldb/cache.h"
 
 #ifndef MCPELOG
     #define MCPELOG(x) do { std::cerr << x << std::endl;} while (0)

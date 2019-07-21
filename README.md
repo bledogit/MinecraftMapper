@@ -1,4 +1,4 @@
-** Minecraft Mapper
+*Minecraft Mapper
 
 ## leveldb-mcpe
 Minecraft modified leveldb library

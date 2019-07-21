@@ -1,6 +1,7 @@
 CC=g++
-CFLAGS=-std=c++11 -DDLLX= -I ../leveldb-mcpe/include/ -c
-LDFLAGS=-L ../leveldb-mcpe -lleveldb
+LEVELDB=../leveldb-mcpe
+CFLAGS=-std=c++11 -DDLLX= -I $(LEVELDB)/include/ -c
+LDFLAGS=-L $(LEVELDB)/out-static -lleveldb -lz -lzstd
 SOURCES=mcpe.cpp McpeBlock.cpp McpeHandler.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=mcpe
