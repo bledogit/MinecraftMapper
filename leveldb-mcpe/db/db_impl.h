@@ -41,6 +41,12 @@ class DBImpl : public DB {
   virtual bool GetProperty(const Slice& property, std::string* value);
   virtual void GetApproximateSizes(const Range* range, int n, uint64_t* sizes);
   virtual void CompactRange(const Slice* begin, const Slice* end);
+  // Set the suspend flag, which tells the database not to schedule background work until resume
+  // Waits for any currently executing BG work to complete before returning
+  virtual void SuspendCompaction();
+  // Clears the suspend flag, so that the database can schedule background work
+  virtual void ResumeCompaction();
+
 
   // Extra methods (for testing) that are not in the public DB interface
 
@@ -78,7 +84,8 @@ class DBImpl : public DB {
   // Recover the descriptor from persistent storage.  May do a significant
   // amount of work to recover recently logged updates.  Any changes to
   // be made to the descriptor are added to *edit.
-  Status Recover(VersionEdit* edit) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  Status Recover(VersionEdit* edit, bool* save_manifest)
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   void MaybeIgnoreError(Status* s) const;
 
@@ -90,9 +97,8 @@ class DBImpl : public DB {
   // Errors are recorded in bg_error_.
   void CompactMemTable() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  Status RecoverLogFile(uint64_t log_number,
-                        VersionEdit* edit,
-                        SequenceNumber* max_sequence)
+  Status RecoverLogFile(uint64_t log_number, bool last_log, bool* save_manifest,
+                        VersionEdit* edit, SequenceNumber* max_sequence)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   Status WriteLevel0Table(MemTable* mem, VersionEdit* edit, Version* base)
@@ -157,6 +163,9 @@ class DBImpl : public DB {
 
   // Has a background compaction been scheduled or is running?
   bool bg_compaction_scheduled_;
+
+  // Has anyone issued a request to suspend background work?
+  port::AtomicPointer suspending_compaction_;
 
   // Information for a manual compaction
   struct ManualCompaction {

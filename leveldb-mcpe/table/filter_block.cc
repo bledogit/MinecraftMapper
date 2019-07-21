@@ -9,7 +9,7 @@
 
 namespace leveldb {
 
-// See doc/table_format.txt for an explanation of the filter block format.
+// See doc/table_format.md for an explanation of the filter block format.
 
 // Generate new filter every 2KB of data
 static const size_t kFilterBaseLg = 11;
@@ -68,7 +68,7 @@ void FilterBlockBuilder::GenerateFilter() {
 
   // Generate filter for current set of keys and append to result_.
   filter_offsets_.push_back((uint32_t)result_.size());
-  policy_->CreateFilter(&tmp_keys_[0], (uint32_t)num_keys, &result_);
+  policy_->CreateFilter(&tmp_keys_[0], static_cast<int>(num_keys), &result_);
 
   tmp_keys_.clear();
   keys_.clear();
@@ -92,12 +92,16 @@ FilterBlockReader::FilterBlockReader(const FilterPolicy* policy,
   num_ = (n - 5 - last_word) / 4;
 }
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable : 4018 )
+#endif
 bool FilterBlockReader::KeyMayMatch(uint64_t block_offset, const Slice& key) {
   uint64_t index = block_offset >> base_lg_;
   if (index < num_) {
     uint32_t start = DecodeFixed32(offset_ + index*4);
     uint32_t limit = DecodeFixed32(offset_ + index*4 + 4);
-    if (start <= limit && limit <= (offset_ - data_)) {
+    if (start <= limit && limit <= static_cast<size_t>(offset_ - data_)) {
       Slice filter = Slice(data_ + start, limit - start);
       return policy_->KeyMayMatch(key, filter);
     } else if (start == limit) {
@@ -107,5 +111,8 @@ bool FilterBlockReader::KeyMayMatch(uint64_t block_offset, const Slice& key) {
   }
   return true;  // Errors are treated as potential matches
 }
+#ifdef _MSC_VER
+#pragma warning ( pop )
+#endif
 
 }

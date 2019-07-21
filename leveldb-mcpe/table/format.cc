@@ -10,8 +10,35 @@
 #include "table/block.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
+#include "leveldb/decompress_allocator.h"
+#include <map>
 
 namespace leveldb {
+
+	DecompressAllocator::~DecompressAllocator() {}
+
+	std::string DecompressAllocator::get() {
+
+		std::string buffer;
+		std::lock_guard<std::mutex> lock(mutex);
+
+		if (!stack.empty()) {
+			buffer = std::move(stack.back());
+			buffer.clear();
+			stack.pop_back();
+		}
+		return buffer;
+	}
+
+	void DecompressAllocator::release(std::string&& string) {
+		std::lock_guard<std::mutex> lock(mutex);
+		stack.push_back(std::move(string));
+	}
+
+	void DecompressAllocator::prune() {
+		std::lock_guard<std::mutex> lock(mutex);
+		stack.clear();
+	}
 
 	void BlockHandle::EncodeTo(std::string* dst) const {
 		// Sanity check that all fields have been set
@@ -32,16 +59,17 @@ namespace leveldb {
 	}
 
 	void Footer::EncodeTo(std::string* dst) const {
-#ifndef NDEBUG
 		const size_t original_size = dst->size();
-#endif
 		metaindex_handle_.EncodeTo(dst);
 		index_handle_.EncodeTo(dst);
 		dst->resize(2 * BlockHandle::kMaxEncodedLength);  // Padding
 		PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber & 0xffffffffu));
 		PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber >> 32));
 		assert(dst->size() == original_size + kEncodedLength);
+  (void)original_size;  // Disable unused variable warning.
 	}
+
+
 
 Status Footer::DecodeFrom(Slice* input) {
   const char* magic_ptr = input->data() + kEncodedLength - 8;
@@ -130,23 +158,37 @@ Status Footer::DecodeFrom(Slice* input) {
 				}
 			}
 
-			assert(compressor != nullptr);
-
-			std::string buffer;
-			if (!compressor || !compressor->decompress(data, n, buffer)) {
+			if (compressor == nullptr) {
 				delete[] buf;
-				return Status::Corruption("corrupted compressed block contents");
+				return Status::NotSupported("encountered a block compressed with an unknown decompressor");
 			}
 
-			auto ubuf = new char[buffer.size()];
-			memcpy(ubuf, buffer.data(), buffer.size());
+			std::string buffer;
+			if (options.decompress_allocator) {
+				buffer = options.decompress_allocator->get();
+			}
+
+			bool success = compressor->decompress(data, n, buffer);
+
+			if (success) {
+				auto ubuf = new char[buffer.size()];
+				memcpy(ubuf, buffer.data(), buffer.size());
+				result->data = Slice(ubuf, buffer.size());
+				result->heap_allocated = true;
+				result->cachable = true;
+			}
+
 			delete[] buf;
-			result->data = Slice(ubuf, buffer.size());
-			result->heap_allocated = true;
-			result->cachable = true;
+			
+			if (options.decompress_allocator) {
+				options.decompress_allocator->release(std::move(buffer));
+			}
+
+			if (!success) {
+				return Status::Corruption("corrupted compressed block contents");
+			}
 		}
 
 		return Status::OK();
 	}
-
 }  // namespace leveldb

@@ -14,7 +14,7 @@ namespace leveldb {
 
 // Update Makefile if you change these
 static const int kMajorVersion = 1;
-static const int kMinorVersion = 18;
+static const int kMinorVersion = 20;
 
 struct DLLX Options;
 struct DLLX ReadOptions;
@@ -115,6 +115,8 @@ class DLLX DB {
   //     about the internal operation of the DB.
   //  "leveldb.sstables" - returns a multi-line string that describes all
   //     of the sstables that make up the db contents.
+  //  "leveldb.approximate-memory-usage" - returns the approximate number of
+  //     bytes of memory in use by the DB.
   virtual bool GetProperty(const Slice& property, std::string* value) = 0;
 
   // For each i in [0,n-1], store in "sizes[i]", the approximate
@@ -139,6 +141,12 @@ class DLLX DB {
   // Therefore the following call will compact the entire database:
   //    db->CompactRange(NULL, NULL);
   virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
+
+  // Allows the underlying storage to prepare for an application suspend event
+  virtual void SuspendCompaction() = 0;
+
+  // Allow the underlying storage to react to an application resume event
+  virtual void ResumeCompaction() = 0;
 
  private:
   // No copying allowed

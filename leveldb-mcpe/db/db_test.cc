@@ -193,6 +193,7 @@ class DBTest {
   // Sequence of option configurations to try
   enum OptionConfig {
     kDefault,
+    kReuse,
     kFilter,
     kUncompressed,
     kEnd
@@ -237,12 +238,13 @@ class DBTest {
   // Return the current option configuration.
   Options CurrentOptions() {
     Options options;
+    options.reuse_logs = false;
     switch (option_config_) {
+      case kReuse:
+        options.reuse_logs = true;
+        break;
       case kFilter:
         options.filter_policy = filter_policy_;
-        break;
-      case kUncompressed:
-        options.compression = kNoCompression;
         break;
       default:
         break;
@@ -555,6 +557,17 @@ TEST(DBTest, GetFromVersions) {
     ASSERT_OK(Put("foo", "v1"));
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("v1", Get("foo"));
+  } while (ChangeOptions());
+}
+
+TEST(DBTest, GetMemUsage) {
+  do {
+    ASSERT_OK(Put("foo", "v1"));
+    std::string val;
+    ASSERT_TRUE(db_->GetProperty("leveldb.approximate-memory-usage", &val));
+    int mem_usage = atoi(val.c_str());
+    ASSERT_GT(mem_usage, 0);
+    ASSERT_LT(mem_usage, 5*1024*1024);
   } while (ChangeOptions());
 }
 
@@ -1007,7 +1020,6 @@ TEST(DBTest, RepeatedWritesToSameKey) {
 
 TEST(DBTest, SparseMerge) {
   Options options = CurrentOptions();
-  options.compression = kNoCompression;
   Reopen(&options);
 
   FillLevels("A", "Z");
@@ -1060,7 +1072,6 @@ TEST(DBTest, ApproximateSizes) {
   do {
     Options options = CurrentOptions();
     options.write_buffer_size = 100000000;        // Large write buffer
-    options.compression = kNoCompression;
     DestroyAndReopen();
 
     ASSERT_TRUE(Between(Size("", "xyz"), 0, 0));
@@ -1079,6 +1090,14 @@ TEST(DBTest, ApproximateSizes) {
 
     // 0 because GetApproximateSizes() does not account for memtable space
     ASSERT_TRUE(Between(Size("", Key(50)), 0, 0));
+
+    if (options.reuse_logs) {
+      // Recovery will reuse memtable, and GetApproximateSizes() does not
+      // account for memtable usage;
+      Reopen(&options);
+      ASSERT_TRUE(Between(Size("", Key(50)), 0, 0));
+      continue;
+    }
 
     // Check sizes across recovery by reopening a few times
     for (int run = 0; run < 3; run++) {
@@ -1109,7 +1128,6 @@ TEST(DBTest, ApproximateSizes) {
 TEST(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
   do {
     Options options = CurrentOptions();
-    options.compression = kNoCompression;
     Reopen();
 
     Random rnd(301);
@@ -1122,6 +1140,11 @@ TEST(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
     ASSERT_OK(Put(Key(5), RandomString(&rnd, 10000)));
     ASSERT_OK(Put(Key(6), RandomString(&rnd, 300000)));
     ASSERT_OK(Put(Key(7), RandomString(&rnd, 10000)));
+
+    if (options.reuse_logs) {
+      // Need to force a memtable compaction since recovery does not do so.
+      ASSERT_OK(dbfull()->TEST_CompactMemTable());
+    }
 
     // Check sizes across recovery by reopening a few times
     for (int run = 0; run < 3; run++) {
@@ -1894,6 +1917,10 @@ class ModelDB: public DB {
   }
   virtual void CompactRange(const Slice* start, const Slice* end) {
   }
+  virtual void SuspendCompaction(){
+  }
+  virtual void ResumeCompaction(){
+  }
 
  private:
   class ModelIter: public Iterator {
@@ -2084,7 +2111,8 @@ void BM_LogAndApply(int iters, int num_base_files) {
   InternalKeyComparator cmp(BytewiseComparator());
   Options options;
   VersionSet vset(dbname, &options, NULL, &cmp);
-  ASSERT_OK(vset.Recover());
+  bool save_manifest;
+  ASSERT_OK(vset.Recover(&save_manifest));
   VersionEdit vbase;
   uint64_t fnum = 1;
   for (int i = 0; i < num_base_files; i++) {

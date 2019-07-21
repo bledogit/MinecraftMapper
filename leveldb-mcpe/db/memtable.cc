@@ -79,6 +79,10 @@ Iterator* MemTable::NewIterator() {
   return new MemTableIterator(&table_);
 }
 
+#ifdef _MSC_VER
+#pragma warning ( push )
+#pragma warning ( disable : 4389 )
+#endif
 void MemTable::Add(SequenceNumber s, ValueType type,
                    const Slice& key,
                    const Slice& value) {
@@ -104,6 +108,9 @@ void MemTable::Add(SequenceNumber s, ValueType type,
   assert((p + val_size) - buf == encoded_len);
   table_.Insert(buf);
 }
+#ifdef _MSC_VER
+#pragma warning ( pop )
+#endif
 
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   Slice memkey = key.memtable_key();
@@ -129,8 +136,10 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
       const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
       switch (static_cast<ValueType>(tag & 0xff)) {
         case kTypeValue: {
-          Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
-          value->assign(v.data(), v.size());
+		  if (value) {
+			Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
+			value->assign(v.data(), v.size());
+		  }
           return true;
         }
         case kTypeDeletion:

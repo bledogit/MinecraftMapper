@@ -19,6 +19,7 @@ class DLLX FilterPolicy;
 class DLLX Logger;
 class DLLX Snapshot;
 class DLLX Compressor;
+class DLLX DecompressAllocator;
 
 // Options to control the behavior of a database (passed to DB::Open)
 struct DLLX Options {
@@ -105,6 +106,18 @@ struct DLLX Options {
   // Default: 16
   int block_restart_interval;
 
+  // Leveldb will write up to this amount of bytes to a file before
+  // switching to a new one.
+  // Most clients should leave this parameter alone.  However if your
+  // filesystem is more efficient with larger files, you could
+  // consider increasing the value.  The downside will be longer
+  // compactions and hence longer latency/performance hiccups.
+  // Another reason to increase this parameter might be when you are
+  // initially populating a large database.
+  //
+  // Default: 2MB
+  size_t max_file_size;
+
   // Compress blocks using the specified compression algorithm.  This
   // parameter can be changed dynamically.
   //
@@ -120,6 +133,12 @@ struct DLLX Options {
   // incompressible, the kSnappyCompression implementation will
   // efficiently detect that and will switch to uncompressed mode.
   Compressor* compressors[256];
+
+  // EXPERIMENTAL: If true, append to existing MANIFEST and log files
+  // when a database is opened.  This can significantly speed up open.
+  //
+  // Default: currently false, but may become true later.
+  bool reuse_logs;
 
   // If non-NULL, use the specified filter policy to reduce disk reads.
   // Many applications will benefit from passing the result of
@@ -151,10 +170,15 @@ struct DLLX ReadOptions {
   // Default: NULL
   const Snapshot* snapshot;
 
+  // Allocator to grab the (possibly tens of mb big) blocks of memory 
+  // where to decompress
+  DecompressAllocator* decompress_allocator;
+
   ReadOptions()
       : verify_checksums(false),
         fill_cache(true),
-        snapshot(NULL) {
+        snapshot(NULL),
+		decompress_allocator(NULL) {
   }
 };
 
