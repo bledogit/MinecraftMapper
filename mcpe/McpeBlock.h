@@ -54,10 +54,21 @@ public:
     bool terrain = false;
     const char* blockData;
     int zmax = 1;
+    int version = -1;
+    int storages = 0;
+    int palette = 0;
+    int size = 0;
+    Color colorarr[256];
     
     McpeBlock(const leveldb::Slice& key, const leveldb::Slice& block);
     McpeBlock(const leveldb::Slice& key, const leveldb::Slice& block, bool debug);
+    void render(Color* map, int stride);
     std::string tagName(char tag);
+
+private:
+    void renderV8(Color* map, int stride);
+    void renderL(Color* map, int stride);
+
 };
 
 

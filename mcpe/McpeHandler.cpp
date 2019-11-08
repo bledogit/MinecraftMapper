@@ -23,116 +23,6 @@ McpeHandler::McpeHandler() {
     map = 0;
     db = 0;
     
-    // Init colors
-    for (int i =0; i < 256; i++)
-        colorarr[i].c = 0xbabe*256+i;
-    
-    colorarr[0].c = 0x0;
-    colorarr[2].c = 0x0000CC00; // grass
-    colorarr[3].c = 0x00663300; // dirt
-    colorarr[8].c = 0x000000ff; // water
-    colorarr[9].c = 0x000000ff; // water
-    colorarr[13].c = 0x00808080; //gravel
-    colorarr[18].c = 0x00146d14; //leaves
-    
-    colorarr[12].c = 0x00FFE6B2; //sand
-    colorarr[24].c = 0x00FFE6B2; //sandstone
-    colorarr[128].c = 0x00FFE6B2; // stand stone stairs
-    
-    colorarr[78].c = 0x00ffffff; //snow cover
-    colorarr[79].c = 0x0000CCFF; //ice
-    colorarr[174].c = 0x0000CCFF; //ice apcked
-    
-    colorarr[27].c = 0x00FF3300; // rail
-    colorarr[66].c = 0x00FF3300; // rail powered
-    
-    colorarr[42].c = 0x00FFFFFF; // iron
-    
-    
-    colorarr[80].c = 0x00ffffff; //snow
-    colorarr[20].c = 0x00befbf7; //glass
-    colorarr[102].c = 0x00befbf7; //glass
-    
-    colorarr[1].c = 0x00808080; //stone
-    colorarr[4].c = 0x00808080; // coblestone
-    colorarr[48].c = 0x00808080; // moss stone
-    colorarr[98].c = 0x00808080; //stone
-    colorarr[109].c = 0x00808080; //stone stairs
-    colorarr[43].c = 0x00808080; //stone
-    colorarr[44].c = 0x00808080; //stone slab
-    
-    
-    colorarr[5].c = 0x00754719; //stairs oak
-    colorarr[53].c = 0x00754719; // oak
-    colorarr[157].c = 0x00754719; // oak
-    colorarr[158].c = 0x00754719; // oak
-    colorarr[85].c = 0x00754719; // fence
-    colorarr[107].c = 0x00754719; // fence
-    colorarr[17].c = 0x00754719; // wood
-    
-    colorarr[163].c = 0x00FF6600; // acacia
-    colorarr[163].c = 0x00FF6600; // acacia
-    colorarr[163].c = 0x00FF6600; // acacia
-    colorarr[163].c = 0x00FF6600; // acacia
-    
-    colorarr[164].c = 0x00542900; // dark
-    colorarr[164].c = 0x00542900; // dark
-    colorarr[164].c = 0x00542900; // dark
-    colorarr[164].c = 0x00542900; // dark
-    
-    colorarr[134].c = 0x00291400; //stairs spruce
-    colorarr[134].c = 0x00291400; //stairs spruce
-    colorarr[134].c = 0x00291400; //stairs spruce
-    colorarr[134].c = 0x00291400; //stairs spruce
-    
-    colorarr[135].c = 0x00EBD699; //stairs brich
-    colorarr[135].c = 0x00EBD699; //stairs brich
-    colorarr[135].c = 0x00EBD699; //stairs brich
-    colorarr[135].c = 0x00EBD699; //stairs brich
-    
-    colorarr[136].c = 0x00A38566; //stairs jungle
-    colorarr[136].c = 0x00A38566; //stairs jungle
-    colorarr[136].c = 0x00A38566; //stairs jungle
-    colorarr[136].c = 0x00A38566; //stairs jungle
-    
-    
-    colorarr[112].c = 0x003D0F00; // neder
-    colorarr[114].c = 0x003D0F00; // nether
-    
-    colorarr[172].c = 0x00B82E00; //clay
-    colorarr[159].c = 0x00B82E00; // stained clay
-    
-    colorarr[89].c = 0x00FFFF00; // glowstone
-    colorarr[50].c = 0x00FFFF00; // candle
-    
-    colorarr[141].c = 0x0000FF00; // crops
-    colorarr[142].c = 0x0000FF00; // crops
-    colorarr[244].c = 0x0000FF00; // crops
-    colorarr[104].c = 0x0000FF00; // crops
-    colorarr[105].c = 0x0000FF00; // crops
-    colorarr[103].c = 0x0000FF00; // crops
-    colorarr[83].c = 0x0000FF00; // crops
-    colorarr[59].c = 0x0000FF00; // crops
-    colorarr[81].c = 0x0000FF00; // crops
-    
-    
-    colorarr[31].c = 0x0000CC00; // grass
-    colorarr[37].c = 0x00deff00; // dandelion
-    colorarr[175].c = 0x00deff00; // sunfl
-    colorarr[38].c = 0x00ec0000; // poppy
-    colorarr[40].c = 0x0000CC00; // moosh
-    colorarr[100].c = 0x0000CC00; // moosh
-    colorarr[32].c = 0x00ec6400; // deadbush
-    colorarr[39].c = 0x00ec0006; // brownmush
-    colorarr[99].c = 0x00ec0006; // brownmush
-    colorarr[51].c = 0x00ff0000; // FIRE
-    colorarr[51].c = 0x00a5a646; // hay
-    
-    colorarr[0xa1].c = 0x00175700; // some tree
-    colorarr[0x6a].c = 0x00175700; // vines
-    colorarr[0x39].c = 0x0000c9ff; // diamond
-    colorarr[0x29].c = 0x00f0ff00; // gold
-    colorarr[0x6e].c = 0x00504354; // mycelium
     
     
 }
@@ -188,41 +78,6 @@ void McpeHandler::loadLevelDB(std::string name) {
     
     MCPELOG("Status = " << status.ToString().c_str() );
     assert(status.ok());
-}
-
-void McpeHandler::getBlock(const char* block, Color* map, int zmax)
-{
-    int air = 0;
-    
-    Color color;
-    color.c = 0x00654321;
-    
-    	    
-    const unsigned char* col = (const unsigned char*)block;
-    for (int x = 0; x < blocksize; x++) {
-        for (int y = 0; y < blocksize; y++) {
-
-            int pos = x + y * width * blocksize;
-            
-            color = map[pos]; //<---- default
-            
-            for (int c = zmax - 1 ; c >= 0; c--) {
-                unsigned int value = col[c];
-                
-                
-                if (value != air) {
-                    color.c = 0xff000000 | colorarr[value].c;
-                    break;
-                }
-                
-            }
-            
-            col = col + zmax;
-            
-            if (map) map[pos] = color;
-        }
-    }
-    
 }
 
 void McpeHandler::moveBlock(int z, const char* block, char* target, size_t size)
@@ -497,16 +352,18 @@ void McpeHandler::loadMap(MapType maptype) {
 
         McpeBlock block(it->key(), it->value());
 
+if ((block.x != 0) || ( block.y != 0)) continue;
+
         if (progress) progress((blockCount++)*100/maxBlocks, progressContext);
 
         if (block.terrain) {
             
             int pos = ((block.x + offX)  + (block.y+offY) * width * blocksize)* blocksize;
             
-            //MCPELOG(status.ToString().c_str() << " " << x << ", " << y << " " << data[8] << " " << slice.size() <<  ": " << value.size() << std::endl; // << it->value().ToString() );
+           //MCPELOG(status.ToString().c_str() << " " << block.x << ", " << block.y << " " << block.blockData[8] << " " << slice.size() <<  ": ");
             
             if (maptype == NORMAL)
-                getBlock(block.blockData, &map[pos], block.zmax);
+                block.render(&map[pos], width);
             else if (maptype == TOPO)
                 getTopo(block.blockData, &map[pos]);
             
